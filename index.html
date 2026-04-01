@@ -1,0 +1,434 @@
+<!--
+==========================================================================
+  DEMO-SEITE: Beispieleinbindung des IGV-Widgets (digitalclaim.io / antson.io)
+==========================================================================
+
+  ZWECK DIESER DATEI
+  ------------------
+  Diese Seite dient ausschließlich als Vorlage und Demo.
+  Sie zeigt, wie das Widget in eine bestehende Makler-Website eingebunden
+  werden kann – sowohl mit eigener CSS-Anpassung als auch in der
+  nativen Darstellung.
+
+  WAS SIE ALS MAKLER TUN MÜSSEN
+  ------------------------------
+  1. Den Bereich zwischen "WIDGET-BEREICH START" und "WIDGET-BEREICH ENDE"
+     in Ihre eigene Website einfügen (HTML + zugehöriges CSS).
+  2. Die Texte in <h1> und <p> innerhalb von ".my_widget_container"
+     nach Ihren Wünschen anpassen.
+  3. Die drei Felder im "app"-Objekt im Script befüllen (Partner-ID, etc.)
+     – Details stehen direkt beim Script.
+  4. Das rote Test-CSS (#my_widget_div, #my_widget_div * { color: red })
+     entfernen oder auf Ihre Farben anpassen.
+
+  WAS SIE NICHT VERÄNDERN DÜRFEN
+  --------------------------------
+  - Die ID "my_widget_div" darf NICHT umbenannt werden; das Widget-Script
+    sucht diesen Anker anhand dieser ID.
+  - Das <script>-Tag mit der URL "go.antson.io" darf nicht verändert werden.
+
+  DEMO-ELEMENTE (NICHT FÜR LIVE-BETRIEB)
+  ----------------------------------------
+  - .demo-header, .demo-footer  → Durch Ihre eigene Navigation/Footer ersetzen.
+  - .site-begin, .site-rest     → Platzhalter für Ihren Website-Inhalt.
+  - ::before-Beschriftungen     → Nur sichtbare Struktur-Labels für diese Demo.
+  - color: red !important       → Nur für Testzwecke aktiviert.
+==========================================================================
+-->
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>IGV Widget Test</title>
+    <style>
+        /* ================================================================
+           DESIGN-VARIABLEN (CSS Custom Properties)
+           Hier können zentrale Farben, Abstände und Größen
+           für die gesamte Demo-Seite angepasst werden.
+           ================================================================ */
+        :root{
+            --bg: #0f1724;              /* Seitenhintergrundfarbe (dunkles Blau) */
+            --surface: #0b1220;         /* Alternativ-Hintergrundebene */
+            --card: #0f1728;            /* Kartenfarbe */
+            --muted: #94a3b8;           /* Gedämpfte Textfarbe (z. B. Untertitel) */
+            --accent-1: #4f46e5;        /* Primärfarbe (Indigo) – Header-Verlauf links */
+            --accent-2: #0ea5a4;        /* Sekundärfarbe (Teal) – Header-Verlauf rechts */
+            --accent-orange: 245,158,11;   /* Akzentfarbe Orange (RGB-Werte, für rgba()) */
+            --accent-green: 16,185,129;    /* Akzentfarbe Grün (RGB-Werte, für rgba()) */
+            --card-blue: 59,130,246;       /* Blauwert für Karten und Rahmen (RGB-Werte) */
+            --glass: rgba(255,255,255,0.04); /* Leicht durchsichtiges Weiß (Glaseffekt) */
+            --radius: 12px;             /* Standard-Eckenradius für Karten und Container */
+            --max-width: 900px;         /* Maximale Inhaltsbreite der Seite */
+        }
+
+        /* ================================================================
+           BASIS-STYLES – Generelle Seiteneinstellungen
+           (Schriftart, Farbschema, Box-Modell)
+           ================================================================ */
+        *{box-sizing:border-box}  /* Alle Elemente berechnen Größe inkl. Padding und Rahmen */
+        html,body{height:100%}    /* Seite füllt die volle Fensterhöhe aus */
+        body{
+            margin:0;
+            font-family: Inter, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial; /* Schriftart-Hierarchie */
+            color:#0f1724;                       /* Standard-Textfarbe (Dunkelblau) */
+            -webkit-font-smoothing:antialiased;  /* Bessere Schriftdarstellung in WebKit-Browsern (Chrome, Safari) */
+            -moz-osx-font-smoothing:grayscale;   /* Bessere Schriftdarstellung auf macOS (Firefox) */
+        }
+        
+        /* Zentrierender Wrapper, der den Seiteninhalt auf max-width begrenzt */
+        .container{
+            max-width:var(--max-width); /* Maximale Breite aus Variable (900px) */
+            margin:10px auto 0 auto;   /* Zentriert mit kleinem Abstand nach oben */
+            padding:10px;              /* Seitlicher Innenabstand */
+        }
+
+
+        /* ================================================================
+           NUR FÜR DEMO: Header (Kopfzeile) der Demo-Seite
+           → Auf der echten Website durch Ihre eigene Navigation ersetzen.
+           ================================================================ */
+        .demo-header{
+            background: linear-gradient(90deg,var(--accent-1),var(--accent-2)); /* Verlauf von Indigo nach Teal */
+            color: white;
+            padding: 6px 0;
+            border-bottom-left-radius: var(--radius);  /* Abgerundete untere Ecken */
+            border-bottom-right-radius: var(--radius);
+        }
+        .demo-header h2{color:#eef6ff;font-weight:700;letter-spacing:0.2px} /* Helles Weiß für den Titel */
+        .header-inner{display:flex;align-items:center;justify-content:space-between;gap:8px} /* Flexbox: Logo links, Nav rechts */
+        .demo-nav a{color:rgba(255,255,255,0.95);text-decoration:none;margin:0 4px;font-weight:600} /* Navigationslinks */
+
+
+
+
+        /* ================================================================
+           NUR FÜR DEMO: Platzhalterkarten für Ihren Website-Inhalt
+           .site-begin = Bereich OBERHALB des Widgets
+           .site-rest  = Bereich UNTERHALB des Widgets
+           → Auf der echten Website durch Ihre eigenen Inhalte ersetzen.
+           ================================================================ */
+        .site-begin, .site-rest, .widget-card{
+            background:linear-gradient(180deg,rgba(255,255,255,0.9),#fff); /* Weißer Kartenhintergrund */
+            border-radius:10px;
+            padding:18px;
+            box-shadow:0 6px 18px rgba(15,23,36,0.06); /* Leichter Schatten */
+        }
+
+        .container.site-begin p,
+        .container.site-rest p{
+            color:var(--muted); /* Gedämpfte Textfarbe für Platzhaltertexte */
+            margin:8px 0 0
+        }
+
+
+        /* ======================================================== */
+        /*           WIDGET START (Einbindungsbereich)              */
+        /* ======================================================== */
+
+        /* Äußeres Container-Element */
+        .my_widget_container{ 
+            position: relative; /* Position relativ, damit Pseudoelemente absolut positioniert werden können */
+            margin: 20px auto; /* Abstand oben/unten und zentriert horizontal */
+            max-width: var(--max-width); /* Maximale Breite an das Seiten-Layout anpassen */
+            width: calc(100% - 40px); /* Breite mit seitlichem Innenabstand als Fallback */
+            padding: 28px; /* Innenabstand um das Widget herum vergrößern */
+            border-radius: 14px; /* Abgerundete Ecken für die Karte */
+            background: linear-gradient(180deg,#f5f9ff,#ffffff); /* Sanfter Hintergrundverlauf für die Karte */
+            border: 4px solid rgba(59,130,246,0.24); /* Bläuliche Umrandung zur Hervorhebung */
+            box-shadow: 0 12px 30px rgba(59,130,246,0.06); /* Dezenter Schatten für Tiefe */
+            background-clip: padding-box; /* Hintergrund innerhalb der Padding-Box zuschneiden */
+        }
+        /* ================================================================
+           NUR FÜR DEMO: Sichtbares Label am Container-Rand
+           Zeigt den CSS-Klassenname zur Orientierung.
+           → Dieses ::before-Element NICHT auf die echte Website übernehmen.
+           ================================================================ */
+        .my_widget_container::before{ 
+            content: "Container: .my_widget_container"; 
+            position: absolute; 
+            top: -16px; 
+            left: 14px; 
+            background: rgba(59,130,246,0.85); 
+            color: white; 
+            font-size: 12px; 
+            padding: 4px 10px; 
+            border-radius: 6px; 
+            box-shadow: 0 4px 8px rgba(15,23,42,0.08); 
+            pointer-events: none; /* Klicks gehen durch das Label hindurch */ 
+        }
+        /* ================================================================
+           ANPASSBAR: DIV, das das Widget aufnimmt (#my_widget_div)
+           WICHTIG: Die ID "my_widget_div" darf NICHT umbenannt werden!
+           Das Widget-Script von antson.io sucht diesen Anker über diese ID.
+           Sie können hier Farben, Abstände und Rahmen nach Bedarf anpassen.
+           ================================================================ */
+        #my_widget_div{ 
+            /* --- Layout & Größe --- */
+            position: relative;             /* Ermöglicht Pseudoelemente innerhalb des DIVs */
+            margin: 8px auto 0 auto;        /* Innen-DIV oben etwas Abstand und zentriert */
+            width: 100%;                    /* Nimmt die verfügbare Breite des Containers ein */
+            max-width: 920px;               /* Maximale Breite des Widget-Bereichs */
+
+            /* --- Optische Gestaltung (anpassbar) --- */
+            border-radius: 10px;                                     /* Abgerundete Ecken */
+            border: 2px dashed rgba(245,158,11,0.18);                /* Oranger gestrichelter Rahmen */
+            background: linear-gradient(180deg,#fffaf0,#ffffff);     /* Hellgelb → Weiß als Hintergrundverlauf */
+            box-shadow: 0 8px 24px rgba(16,24,40,0.06);              /* Dezenter Tiefenschatten */
+            padding: 18px;                                           /* Innenabstand innerhalb des Bereichs */
+        } 
+        /* NUR FÜR DEMO: Sichtbares Label mit DIV-ID zur Orientierung
+           → Nicht auf die echte Website übernehmen. */
+        #my_widget_div::before{ 
+            content: "Div: #my_widget_div"; 
+            position: absolute; 
+            top: -12px; 
+            left: 10px; 
+            background: rgba(245,158,11,0.85); 
+            color: white; 
+            font-size: 11px; 
+            padding: 2px 6px; 
+            border-radius: 6px; 
+            pointer-events: none; 
+        }
+
+        /* ================================================================
+           ANPASSBAR: CSS-Überschreibungen für Widget-Inhalte
+           Diese Regeln zeigen, wie Sie die Darstellung des Widgets
+           an Ihr Corporate Design anpassen können.
+           ================================================================ */
+        #my_widget_div button{background-color: auto;}              /* Schaltflächen-Hintergrund: "auto" = Widget-Standard */
+        #my_widget_div .row{background-color: transparent;}         /* Zeilen-/Formularfelder: transparenter Hintergrund */
+
+        /* ================================================================
+           !! ACHTUNG – NUR FÜR TESTZWECKE AKTIV !!
+           Diese Regel färbt ALLE Texte im Widget rot.
+           Damit wird geprüft, ob CSS-Überschreibungen (color) wirken.
+           VOR DEM LIVEGANG: Diese Zeile entfernen oder auf Ihre
+           gewünschte Textfarbe ändern (z. B. color: #1a1a2e).
+           ================================================================ */
+        #my_widget_div, #my_widget_div * { color: red !important; }
+
+
+
+        /* ================================================================
+           NUR FÜR DEMO: Zweite Widget-Instanz (#my_widget_div_2)
+           Zeigt dasselbe Widget OHNE CSS-Farbüberschreibung (kein color: red),
+           damit die native Darstellung des Widgets verglichen werden kann.
+           → Auf der echten Website wird nur EINE Instanz benötigt.
+           ================================================================ */
+        #my_widget_div_2{ 
+            /* --- Layout & Größe --- */
+            position: relative;
+            margin: 8px auto 0 auto;
+            width: 100%;
+            max-width: 920px;
+
+            /* --- Optische Gestaltung (identisch zu #my_widget_div) --- */
+            border-radius: 10px;
+            border: 2px dashed rgba(245,158,11,0.18);
+            background: linear-gradient(180deg,#fffaf0,#ffffff);
+            box-shadow: 0 8px 24px rgba(16,24,40,0.06);
+            padding: 18px;
+        } 
+        /* NUR FÜR DEMO: Sichtbares Label mit DIV-ID zur Orientierung
+           → Nicht auf die echte Website übernehmen. */
+        #my_widget_div_2::before{ 
+            content: "Div: #my_widget_div_2"; 
+            position: absolute; 
+            top: -12px; 
+            left: 10px; 
+            background: rgba(245,158,11,0.85); 
+            color: white; 
+            font-size: 11px; 
+            padding: 2px 6px; 
+            border-radius: 6px; 
+            pointer-events: none; 
+        }
+
+
+
+        /* ======================================================== */
+        /*           WIDGET STOPP (Einbindungsbereich)              */
+        /* ======================================================== */
+
+
+        /* ================================================================
+           NUR FÜR DEMO: Footer (Fußzeile) der Demo-Seite
+           → Auf der echten Website durch Ihren eigenen Footer ersetzen.
+           Den Text "YOUR_COMPANY_NAME" und "YOUR_YEAR" im HTML anpassen.
+           ================================================================ */
+        .demo-footer{
+            margin-top:28px;
+            padding:18px 0;
+            background: linear-gradient(90deg,var(--accent-1),var(--accent-2)); /* Gleicher Verlauf wie Header */
+            color: white;
+            border-top-left-radius: var(--radius);  /* Abgerundete obere Ecken */
+            border-top-right-radius: var(--radius);
+            box-shadow: 0 -6px 20px rgba(15,23,42,0.04); /* Leichter Schatten nach oben */
+        }
+        .footer-inner{color:rgba(255,255,255,0.92);text-align:center} /* Zentrierter heller Text im Footer */
+
+</style>
+
+
+
+</head>
+<body>
+    <!-- NUR FÜR DEMO: Header der Demo-Seite – auf der echten Website durch Ihre Navigation ersetzen -->
+    <header class="demo-header">
+        <div class="container header-inner">
+            <h2>Demo — Beispieleinbindung Widget</h2>
+            <nav class="demo-nav">
+                <a href="#">Home</a> 
+                <span class="sep">|</span> 
+                <a href="#">Kontakt</a>
+            </nav>
+        </div>
+    </header>
+
+
+
+    <main class="site-main">
+
+        <!-- NUR FÜR DEMO: Dieser Abschnitt stellt den Bereich Ihrer Website DAR, der OBERHALB des Widgets erscheint.
+             Auf der echten Website ersetzen Sie diesen Block durch Ihren eigenen Inhalt. -->
+        <section class="container site-begin">
+            <h3>Ihre Website (Platzhalter)</h3>
+            <p>Hier befindet sich Ihre eigene Website.</p>
+        </section>
+
+        
+        <!--
+        ============================================================
+        WIDGET-BEREICH START
+        Alles zwischen diesem Kommentar und "WIDGET-BEREICH ENDE"
+        müssen Sie in Ihre Website einbauen.
+        ============================================================
+        -->
+
+
+        <!-- AUF IHRE WEBSITE ÜBERNEHMEN: Dieser Container umhüllt das Widget und gibt ihm den Rahmen und die Karte. -->
+        <!-- Das CSS für ".my_widget_container" aus dem <style>-Block ebenso übernehmen. -->
+        <section class="my_widget_container">
+            
+            <!-- ANPASSBAR: Überschrift oberhalb des Widgets – nach Belieben ändern oder entfernen -->
+            <h1>Widget - persönliche Überschrift</h1>
+            <!-- ANPASSBAR: Einleitungstext zum Widget – nach Belieben ändern oder entfernen -->
+            <p>Hier können Sie eine kurze Einführung oder Beschreibung zum Widget geben, damit Ihre Nutzer wissen, was sie erwartet.</p>
+            <br></br>
+
+            <!-- WICHTIG: Diese ID (#my_widget_div) darf NICHT umbenannt werden! Das Widget-Script erkennt diesen Bereich anhand dieser ID. -->
+            <div id="my_widget_div">
+                
+                <!-- Dieser Text erscheint kurz, während das Widget noch lädt. Er kann angepasst oder entfernt werden. -->
+                <p>Hier wird das Widget geladen. Es kann einige Sekunden dauern, bis alle Inhalte angezeigt werden.</p>
+                <!-- NUR FÜR DEMO: Dieser Satz testet die Textfarbe innerhalb des Widget-Bereichs. Kann entfernt werden. -->
+                <p>Dieser Text wird die gleiche Formatierung wie der Text im Widget annehmen.</p>
+
+                <!--
+                    WIDGET-SCRIPT: Diesen Block 1:1 auf Ihre Website übernehmen.
+                    Nur die drei Felder im "app"-Objekt müssen befüllt werden (siehe unten).
+                    Das restliche Script NICHT verändern.
+                -->
+                <script type="text/javascript" id="vb_be9a503_en_GB">
+                    var app = {
+                    /* Ihre Partner-ID von digitalclaim.io.
+                       Leer lassen ("") wenn keine spezielle Partner-ID vorhanden.
+                       Beispiel: "vbid": "mein-makler-id" */
+                    "vbid": "",
+
+                    /* Weiterleitung nach Abschluss des Schadensprozesses.
+                       Tragen Sie hier die URL ein, auf die Ihre Kunden nach dem Abschluss weitergeleitet werden sollen.
+                       Leer lassen ("") wenn keine Weiterleitung gewünscht.
+                       Beispiel: "back_link_url": "https://www.ihremaklerseite.de/danke" */
+                    "back_link_url": "",
+
+                    /* Beschriftung des Weiterleitungs-Buttons (nur relevant wenn back_link_url gesetzt).
+                       Beispiel: "back_link_label": "Zurück zur Startseite" */
+                    "back_link_label": ""
+                    };
+
+                    /* Ab hier: Script NICHT verändern! Lädt das Widget automatisch wenn die Seite bereit ist. */
+                    function ready(e) {"complete" == document.readyState ? e() : document.addEventListener ? document.addEventListener("DOMContentLoaded", e) : document.attachEvent("onreadystatechange", function() { "complete" == document.readyState && e() })};serialize = function(obj) {var str = [];for (var p in obj) if (obj.hasOwnProperty(p)) {str.push(encodeURIComponent(p) + "=" + encodeURIComponent(obj[p]));}return str.join("&");};ready(function() {var e = document.getElementsByTagName("head")[0];script = document.createElement("script");script.id = 'vbs_be9a503_en_GB';script.type = "text/javascript";script.src = "https://go.antson.io/configurator/widget/load" + "?key=64f6e5c13c3964fb67bad1670ff38c0622e55c2e&app=be9a584d898636b15e9e41d2e9b86cac637a61e4&lang=en_GB&" + serialize(app);e.appendChild(script)});
+                </script>
+
+            </div>
+
+        </section>
+
+
+        <!-- NUR FÜR DEMO: Zweite Widget-Instanz zur direkten Gegenüberstellung (native Darstellung ohne Farbeingriff).
+             Auf der echten Website wird nur EINE Instanz benötigt – dieser Block entfällt dort komplett. -->
+        <section class="my_widget_container">
+
+            <!-- ANPASSBAR: Überschrift für den Vergleichs-Block -->
+            <h1>Widget - native Darstellung</h1>
+            <!-- ANPASSBAR: Erklärungstext für diesen Demo-Block -->
+            <p>Hier sehen Sie dasselbe Widget ohne CSS-Überschreibung – in seiner nativen Darstellung.</p>
+            <br></br>
+
+            <div id="my_widget_div_2">
+
+                <!-- Ladetext während das Widget noch erscheint. Kann angepasst werden. -->
+                <p>Hier wird das Widget geladen – native Darstellung ohne CSS-Überschreibung.</p>
+                <!-- NUR FÜR DEMO: Vergleichs-Satz ohne Color-Override -->
+                <p>Dieser Text nimmt das native Widget-Styling an (kein Color-Override).</p>
+
+                <!--
+                    NUR FÜR DEMO: Script für die zweite Widget-Instanz.
+                    → Diesen Block auf der echten Website NICHT übernehmen.
+
+                    Technischer Hintergrund (nur für Entwickler relevant):
+                    Das Widget-Script von antson.io erkennt seinen Zielbereich über einen
+                    Anker-Span mit der ID "vb_be9a503_en_GB". Da der erste Widget-Block diesen
+                    Anker nach ca. 3 Sekunden automatisch entfernt, wird die zweite Instanz
+                    erst nach 4 Sekunden eingefügt – so arbeiten beide Instanzen fehlerfrei
+                    nacheinander und überschreiben sich nicht gegenseitig.
+                -->
+                <script type="text/javascript">
+                    setTimeout(function() {
+                        var anchor = document.createElement('span');
+                        anchor.id = 'vb_be9a503_en_GB';
+                        document.getElementById('my_widget_div_2').appendChild(anchor);
+
+                        if (typeof load_vibot === 'function') {
+                            load_vibot();
+                        }
+                    }, 4000);
+                </script>
+
+            </div>
+
+        </section>
+
+
+
+        <!--
+        ============================================================
+        WIDGET-BEREICH ENDE
+        ============================================================
+        -->
+
+
+        <!-- NUR FÜR DEMO: Dieser Abschnitt stellt den Bereich Ihrer Website dar, der UNTERHALB des Widgets erscheint.
+             Auf der echten Website ersetzen Sie diesen Block durch Ihren eigenen Inhalt. -->
+        <section class="container site-rest">
+            <h3>Rest Ihrer Website</h3>
+            <p>Weitere Inhalte, Links oder Kontaktinformationen würden hier angezeigt werden.</p>
+        </section>
+
+    </main>
+
+
+
+    <!-- NUR FÜR DEMO: Fußzeile der Demo-Seite.
+         ANPASSBAR: "YOUR_COMPANY_NAME" durch Ihren Firmennamen ersetzen, "YOUR_YEAR" durch das aktuelle Jahr.
+         Auf der echten Website durch Ihren eigenen Footer ersetzen. -->
+    <footer class="demo-footer">
+        <div class="container footer-inner">
+            <small>Demo Footer — YOUR_COMPANY_NAME © YOUR_YEAR</small>
+        </div>
+    </footer>
+</body>
+</html>
